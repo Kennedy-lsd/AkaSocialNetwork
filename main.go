@@ -23,7 +23,7 @@ func main() {
 
 	db, err := db.New(cfg.Db.Addr, 30, cfg.Db.MaxIdleTime)
 	if err != nil {
-		log.Fatalf("error with db connection %v", err)
+		log.Fatalf("An error with db connection: %v", err)
 	}
 
 	defer db.Close()
