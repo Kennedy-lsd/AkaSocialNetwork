@@ -26,7 +26,11 @@ type App struct {
 func (a *App) Mount() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/v1/status", a.statusCheckHandler)
+	mux.HandleFunc("GET /v1/status", a.statusCheckHandler)
+	mux.HandleFunc("POST /v1/users", a.createUserHandler)
+	mux.HandleFunc("GET /v1/users", a.getUsersHandler)
+	mux.HandleFunc("GET /v1/users/{id}", a.getUserHandler)
+	mux.HandleFunc("DELETE /v1/users/{id}", a.deleteUserHandler)
 
 	loggerMux := loggerMiddleware(mux)
 
