@@ -32,6 +32,12 @@ func (a *App) Mount() http.Handler {
 	mux.HandleFunc("GET /v1/users/{id}", a.getUserHandler)
 	mux.HandleFunc("DELETE /v1/users/{id}", a.deleteUserHandler)
 
+	mux.HandleFunc("POST /v1/posts", a.createPostHandler)
+	mux.HandleFunc("GET /v1/posts", a.getPostsHandler)
+	mux.HandleFunc("GET /v1/posts/{id}", a.getPostHandler)
+	mux.HandleFunc("DELETE /v1/posts/{id}", a.deletePostHandler)
+	mux.HandleFunc("UPDATE /v1/posts/{id}", a.updatePostHandler)
+
 	loggerMux := loggerMiddleware(mux)
 
 	return loggerMux
