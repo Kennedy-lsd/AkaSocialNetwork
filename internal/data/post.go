@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -23,7 +22,7 @@ type PostData struct {
 }
 
 func (d *PostData) Create(ctx context.Context, p *Post) error {
-	query := `INSERT INTO (title, tags, user_id)
+	query := `INSERT INTO posts (title, tags, user_id)
 			  VALUES ($1, $2, $3) RETURNING id, created_at`
 
 	err := d.db.QueryRowContext(ctx, query, p.Title, pq.Array(p.Tags), p.UserId).Scan(&p.Id, &p.CreatedAt)
@@ -38,12 +37,26 @@ func (d *PostData) Create(ctx context.Context, p *Post) error {
 func (d *PostData) GetAll(ctx context.Context) ([]Post, error) {
 	query := `SELECT * FROM posts`
 
-	var posts []Post
-
-	err := d.db.SelectContext(ctx, &posts, query)
-
+	rows, err := d.db.QueryxContext(ctx, query)
 	if err != nil {
 		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		var tags pq.StringArray
+		err := rows.Scan(&post.Id, &post.Title, &post.CreatedAt, &tags, &post.UserId)
+		if err != nil {
+			return nil, err
+		}
+		post.Tags = tags
+		posts = append(posts, post)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	return posts, nil
@@ -53,12 +66,20 @@ func (d *PostData) GetOne(ctx context.Context, id int64) (*Post, error) {
 	query := `SELECT * FROM posts WHERE id = $1`
 
 	var post Post
+	var tags pq.StringArray
 
-	err := d.db.GetContext(ctx, &post, query, id)
-
+	err := d.db.QueryRowxContext(ctx, query, id).Scan(
+		&post.Id,
+		&post.Title,
+		&post.CreatedAt,
+		&tags,
+		&post.UserId,
+	)
 	if err != nil {
 		return nil, err
 	}
+
+	post.Tags = tags
 
 	return &post, nil
 }
@@ -94,7 +115,7 @@ func (d *PostData) Update(ctx context.Context, id int64, p *Post) error {
 
 	result, err := d.db.ExecContext(ctx, query, p.Title, pq.Array(p.Tags), id)
 	if err != nil {
-		return fmt.Errorf("failed to update post: %w", err)
+		return errors.New("failed to update post")
 	}
 
 	rowsAffected, err := result.RowsAffected()
